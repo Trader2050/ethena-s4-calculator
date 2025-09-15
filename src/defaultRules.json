@@ -1,0 +1,54 @@
+{
+  "version": "s4-demo-1",
+  "categories": [
+    { "id": "holding", "label": "持仓" },
+    { "id": "activity", "label": "活跃度" },
+    { "id": "social", "label": "社交" }
+  ],
+  "rules": [
+    {
+      "id": "usde_twap",
+      "category": "holding",
+      "label": "USDe 持仓（时间加权）",
+      "type": "timeWeighted",
+      "inputKey": "usdeAmount",
+      "daysKey": "usdeDays",
+      "rate": 0.02,
+      "cap": 200000
+    },
+    {
+      "id": "susde_stake",
+      "category": "holding",
+      "label": "sUSDe 质押（时间加权）",
+      "type": "timeWeighted",
+      "inputKey": "susdeAmount",
+      "daysKey": "susdeDays",
+      "rate": 0.03,
+      "cap": 300000
+    },
+    {
+      "id": "trade_volume",
+      "category": "activity",
+      "label": "交易量分段",
+      "type": "tiered",
+      "inputKey": "tradeVolumeUsd",
+      "tiers": [
+        { "lte": 1000, "scorePerUnit": 0.02 },
+        { "lte": 10000, "scorePerUnit": 0.01 },
+        { "gt": 10000, "scorePerUnit": 0.005 }
+      ],
+      "cap": 150000
+    },
+    {
+      "id": "referral_bonus",
+      "category": "social",
+      "label": "邀请加成（乘数）",
+      "type": "multiplier",
+      "inputKey": "referralCount",
+      "base": 1,
+      "perUnit": 0.02,
+      "max": 1.2
+    }
+  ]
+}
+
