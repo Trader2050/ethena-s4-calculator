@@ -110,6 +110,9 @@ export default function Component() {
   const [totalUnit, setTotalUnit] = useState<Unit>("T");
   const [s4Percent, setS4Percent] = useState<number>(3.5); // 默认 3.5%
   const [enaTotalSupply] = useState<number>(15_000_000_000); // 15B 固定
+  // 文本态，便于输入小数与过渡态（如 "49.")
+  const [myPointsText, setMyPointsText] = useState<string>("0");
+  const [totalPointsText, setTotalPointsText] = useState<string>("48.09");
 
   // 价格联动
   const [enaPrice, setEnaPrice] = useState<number | undefined>(undefined);
@@ -221,7 +224,9 @@ export default function Component() {
     setMyUnit("M");
     setTotalUnit("T");
     setMyPoints(120); // 120M
+    setMyPointsText("120");
     setTotalPoints(48.09); // 48.09T
+    setTotalPointsText("48.09");
     setS4Percent(3.5);
   };
 
@@ -255,8 +260,14 @@ export default function Component() {
                 <Input
                   id="myPoints"
                   inputMode="decimal"
-                  value={myPoints}
-                  onChange={(e) => { const r = parseNumberAndUnit(e.target.value, myUnit); setMyPoints(r.value); if (r.unit !== myUnit) setMyUnit(r.unit); }}
+                  value={myPointsText}
+                  onChange={(e) => {
+                    const t = e.target.value;
+                    setMyPointsText(t);
+                    const r = parseNumberAndUnit(t, myUnit);
+                    setMyPoints(r.value);
+                    if (r.unit !== myUnit) setMyUnit(r.unit);
+                  }}
                   placeholder="例如 120（结合右侧单位）"
                 />
               </div>
@@ -282,8 +293,14 @@ export default function Component() {
                 <Input
                   id="totalPoints"
                   inputMode="decimal"
-                  value={totalPoints}
-                  onChange={(e) => { const r = parseNumberAndUnit(e.target.value, totalUnit); setTotalPoints(r.value); if (r.unit !== totalUnit) setTotalUnit(r.unit); }}
+                  value={totalPointsText}
+                  onChange={(e) => {
+                    const t = e.target.value;
+                    setTotalPointsText(t);
+                    const r = parseNumberAndUnit(t, totalUnit);
+                    setTotalPoints(r.value);
+                    if (r.unit !== totalUnit) setTotalUnit(r.unit);
+                  }}
                   placeholder="默认 48.09（可修改）"
                 />
               </div>
@@ -340,7 +357,14 @@ export default function Component() {
             <div className="flex gap-2">
               <Button onClick={fillExample} variant="secondary">一键示例</Button>
               <Button
-                onClick={() => { setMyPoints(0); setTotalPoints(0); setEnaPrice(undefined); setS4Percent(3.5); }}
+                onClick={() => {
+                  setMyPoints(0);
+                  setMyPointsText("");
+                  setTotalPoints(0);
+                  setTotalPointsText("");
+                  setEnaPrice(undefined);
+                  setS4Percent(3.5);
+                }}
                 variant="secondary"
               >清空</Button>
             </div>
