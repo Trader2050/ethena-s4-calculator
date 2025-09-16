@@ -195,29 +195,38 @@ export default function Component() {
     return (myPointsAbs / totalPointsAbs) * pool;
   }, [myPointsAbs, totalPointsAbs, pool]);
 
-  const forecast = useMemo(() => {
-    if (!myPointsAbs || !totalPointsAbs || !remDays) return [] as Array<{ day: number; newENA: number; totalENA: number }>;
-    let prev = (myPointsAbs / totalPointsAbs) * pool;
-    const arr: Array<{ day: number; newENA: number; totalENA: number }> = [];
-    for (let d = 1; d <= remDays; d++) {
-      const mp = myPointsAbs + myDailyAbs * d;
-      const tp = totalPointsAbs + totalDailyAbs * d;
-      const cur = tp > 0 ? (mp / tp) * pool : 0;
-      arr.push({ day: d, newENA: cur - prev, totalENA: cur });
-      prev = cur;
-    }
-    return arr;
+  // 期末（至 END_DATE）总量（包含我与全网的后续增长）
+  const endENA = useMemo(() => {
+    if (!myPointsAbs || !totalPointsAbs) return undefined;
+    const finalMy = myPointsAbs + myDailyAbs * remDays;
+    const finalTotal = totalPointsAbs + totalDailyAbs * remDays;
+    if (finalTotal <= 0) return 0;
+    return (finalMy / finalTotal) * pool;
   }, [myPointsAbs, totalPointsAbs, myDailyAbs, totalDailyAbs, remDays, pool]);
 
-  const endENA = useMemo(() => {
-    if (forecast.length > 0) return forecast[forecast.length - 1].totalENA;
-    return startENA;
-  }, [forecast, startENA]);
+  // 仅由“我未来日增积分”带来的新增 ENA（他人增速不变）——恒为非负
+  const futureMyAddedENA = useMemo(() => {
+    if (!myPointsAbs || !totalPointsAbs) return undefined;
+    const finalMy = myPointsAbs + myDailyAbs * remDays;
+    const finalTotal = totalPointsAbs + totalDailyAbs * remDays;
+    // 对比：移除我后续贡献（他人仍按增速增长）
+    const noMyFutureTotal = totalPointsAbs + totalDailyAbs * remDays; // 我不增，分母不含我的未来增量
+    const noMyFutureENA = noMyFutureTotal > 0 ? (myPointsAbs / noMyFutureTotal) * pool : 0;
+    const withAllENA = finalTotal > 0 ? (finalMy / finalTotal) * pool : 0;
+    const delta = withAllENA - noMyFutureENA;
+    return Math.max(0, delta);
+  }, [myPointsAbs, totalPointsAbs, myDailyAbs, totalDailyAbs, remDays, pool]);
 
-  const addedENA = useMemo(() => {
-    if (startENA === undefined || endENA === undefined) return undefined;
-    return endENA - startENA;
-  }, [startENA, endENA]);
+  // 逐日分摊展示：把“我未来新增 ENA”平均到每日，保证不为负、便于理解
+  const forecast = useMemo(() => {
+    if (!startENA || !futureMyAddedENA || !remDays) return [] as Array<{ day: number; newENA: number; totalENA: number }>;
+    const perDay = futureMyAddedENA / remDays;
+    const arr: Array<{ day: number; newENA: number; totalENA: number }> = [];
+    for (let d = 1; d <= remDays; d++) {
+      arr.push({ day: d, newENA: perDay, totalENA: startENA + perDay * d });
+    }
+    return arr;
+  }, [startENA, futureMyAddedENA, remDays]);
 
   // UI 操作
   const fillExample = () => {
@@ -460,18 +469,10 @@ export default function Component() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="p-4 rounded-2xl bg-muted border border-border text-center">
-                <div className="text-xs text-muted-foreground">如果今天结束（预计 ENA）</div>
-                <div className="text-2xl font-semibold mt-1">{fmtShort(startENA)}</div>
-              </div>
-              <div className="p-4 rounded-2xl bg-muted border border-border text-center">
-                <div className="text-xs text-muted-foreground">预计期末（至 2025-09-24）</div>
-                <div className="text-2xl font-semibold mt-1">{fmtShort(endENA)}</div>
-              </div>
+            <div className="grid grid-cols-1 gap-3">
               <div className="p-4 rounded-2xl bg-muted border border-border text-center">
                 <div className="text-xs text-muted-foreground">未来新增 ENA（合计）</div>
-                <div className="text-2xl font-semibold mt-1">{fmtShort(addedENA)}</div>
+                <div className="text-2xl font-semibold mt-1">{fmtShort(futureMyAddedENA)}</div>
               </div>
             </div>
 
